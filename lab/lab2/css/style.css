@@ -1,44 +1,54 @@
 body {
     padding: 0;
+    font-family: helvetica, arial, sans-serif;
     overflow: hidden;
-    font-family: colfax, helvetica, arial, sans-serif;
+}
+
+.header {
+  position: absolute;
+  height: 50px;
+  width: 100%;
+  background-color: #444;
+  color: #fff;
+  position: absolute;
+  top: 0;
 }
 
 .map {
-    position: absolute;
-    right: 0px;
-    left: 340px;
-    height: 100%;
-    top: 0;
+  position: absolute;
+  left: 440px;
+  right: 0;
+  bottom: 0;
+  top: 50px;
 }
 
 .sidebar {
-    position: absolute;
-    left: 0px;
-    width: 340px;
-    top: 0;
-    bottom: 0;
-    overflow-y: auto;
-    padding: 20px;
+  position: absolute;
+  left: 0px;
+  width: 440px;
+  top: 50px;
+  bottom: 0;
+  padding: 20px;
+  overflow: hidden;
+  overflow-y: auto;
 }
 
-h1 {
-    margin-bottom: 10px;
+#toggle-sidebar {
+  position: absolute;
+  right: 10px;
+  top: 60px;
+  z-index: 200;
+  padding: 6px 10px;
+  background-color: #057071;
+  border: 0;
+  color: #fff;
+  display: block;
 }
 
-h2 {
-    font-weight: normal;
-    color: #666;
-    margin-top: 10px,
+@media screen and (min-width: 480px) and (max-width: 800px) {
+
 }
 
-.street-selected path {
-  -webkit-animation: active 5s ease-out;
-  -webkit-animation-iteration-count: infinite;
-}
+@media screen and (max-width: 479px) {
 
-@-webkit-keyframes active {
-    0% {opacity: 1;}
-    50% {opacity: 1; stroke-width: 10;}
-    100% {opacity: 1;}
 }
