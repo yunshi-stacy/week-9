@@ -72,6 +72,18 @@ Moving your mouse outside of the circle should remove the highlighting.
 // Global Variables
 
 var myRectangle;
+var myRectangles = [];
+var myLayergroup = [];
+var changeShapeColor = function(layerID, layerGroup){
+  var highlightColor = layerGroup.getLayer(layerID).options.color === 'rgb(255, 0, 0)' ? 'rgb(0, 0, 255)' : 'rgb(255, 0, 0)';
+  layerGroup.getLayer(layerID).setStyle({color: highlightColor});
+};
+
+var changeSidebarColor = function(layerID){
+  var highlightColor = $('div#' +layerID).css('color') === 'rgb(255, 0, 0)' ? 'rgb(0, 0, 255)' : 'rgb(255, 0, 0)';
+  $('div#' +layerID).css('color', highlightColor);
+};
+
 
 // Initialize Leaflet Draw
 
@@ -90,9 +102,45 @@ map.addControl(drawControl);
 // Run every time Leaflet draw creates a new layer
 
 map.on('draw:created', function (e) {
-    var type = e.layerType; // The type of shape
-    var layer = e.layer; // The Leaflet layer for the shape
-    var id = L.stamp(layer); // The unique Leaflet ID for the layer
+  var type = e.layerType; // The type of shape
+  var layer = e.layer; // The Leaflet layer for the shape
+  var id = L.stamp(layer); // The unique Leaflet ID for the layer
+
+
+  // // Task 2: Add rectangles to map
+  // map.addLayer(layer);
+
+  // // Task 3 & Task 4;
+  // if (myRectangle) {
+  //   map.removeLayer(myRectangle);
+  //   $('#shapes').empty();
+  // };
+  // myRectangle = layer;
+  // map.addLayer(myRectangle);
+  // $('#shapes').append('<div class="shape" data-leaflet-id="id"><h1>Current ID: ' + id +'</h1></div>')
+
+  // Stretch Goal 1: Store multiple shapes
+  map.addLayer(layer);
+  myRectangles.push(layer);
+  myLayergroup = L.layerGroup(myRectangles);
+  $('#shapes').empty();
+
+  myLayergroup.eachLayer(function(layer) {
+      $('#shapes').append("<div class='shape' id=" + layer._leaflet_id + " style='cursor: pointer' onclick='var searchLayerID = $(this).context.id; changeShapeColor(searchLayerID, myLayergroup);' ><h1>Map ID: "+ layer._leaflet_id + "</h1></div>");
+      layer.on('mousemove', function(){
+        changeSidebarColor($(this)[0]._leaflet_id)
+      });
+  });
+
+
+  // Stretch Goal 3: Reverse Stretch Goal 2
+  //
+  // Modify the application so moving your mouse over a rectangle on the map will
+  // highlight (change style in some way) the corresponding element in the sidebar.
+  // Moving your mouse outside of the circle should remove the highlighting.
+
+
+
 
 
 

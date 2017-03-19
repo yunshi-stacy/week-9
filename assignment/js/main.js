@@ -2,13 +2,13 @@
 Routing and Leaflet Draw
 
 Build an application that meets the following specifications
-  - The user should click on a Leaflet draw marker button and add a marker to the map
-  - When the user adds a second marker, an AJAX request is set to Mapzen's optimized_route
-    function. Add the shape of this route to the map. Hide the draw marker button and show the
-    "Reset Map" button.
-  - When the user clicks "Reset Map", the state should be reset to its original values and all
-    markers and route should be removed from the map. Show the draw marker button and hide the
-    "Reset Map" button.
+- The user should click on a Leaflet draw marker button and add a marker to the map
+- When the user adds a second marker, an AJAX request is set to Mapzen's optimized_route
+function. Add the shape of this route to the map. Hide the draw marker button and show the
+"Reset Map" button.
+- When the user clicks "Reset Map", the state should be reset to its original values and all
+markers and route should be removed from the map. Show the draw marker button and hide the
+"Reset Map" button.
 
 Here is a video of what this would look like: http://g.recordit.co/5pTMukE3PR.gif
 
@@ -44,11 +44,11 @@ instead of [lat, lng], so you may need to flip your coordinates.
 State
 
 - `count` should increase by one each time you add a new marker.
-  This will help you figure out how many markers you have added
+This will help you figure out how many markers you have added
 - `marker1` should be set to the leaflet layer that is created when
-  you add your first marker
+you add your first marker
 - `marker2` should be set to the leaflet layer that is created when
-  you add your second marker
+you add your second marker
 - `line` should be set to the leaflet layer of the route.
 
 Keeping track of `marker1`, `marker2`, and `line` will help us remove
@@ -60,6 +60,11 @@ var state = {
   marker1: undefined,
   marker2: undefined,
   line: undefined,
+  rqJSON: {
+    locations: [],
+    costing: 'auto',
+  },
+
 }
 
 /** ---------------
@@ -109,6 +114,7 @@ var resetApplication = function() {
   map.removeLayer(state.line);
   state.line = undefined;
   $('#button-reset').hide();
+  $('.leaflet-draw').show()
 }
 
 $('#button-reset').click(resetApplication);
@@ -118,11 +124,38 @@ On draw
 
 Leaflet Draw runs every time a marker is added to the map. When this happens
 ---------------- */
-
 map.on('draw:created', function (e) {
+  var myLayergroup;
   var type = e.layerType; // The type of shape
   var layer = e.layer; // The Leaflet layer for the shape
   var id = L.stamp(layer); // The unique Leaflet ID for the
-
-  console.log('Do something with the layer you just created', layer, layer._latlng);
+  if (state.count === 0){
+    state.marker1 = layer;
+    map.addLayer(layer);
+    state.rqJSON.locations[0] = _.object(['lat','lon'], _.values(layer._latlng));
+    state.count += 1;
+  } else if(state.count === 1){
+    $('#button-reset').show();
+    $('.leaflet-draw').hide()
+    state.marker2 = layer;
+    state.rqJSON.locations[1] = _.object(['lat','lon'], _.values(layer._latlng));
+    map.addLayer(layer);
+    $.ajax({
+      type: 'GET',
+      url: 'https://matrix.mapzen.com/optimized_route',
+      data: {
+        json: JSON.stringify(state.rqJSON),
+        api_key: 'mapzen-Zg5RY9p'
+      }
+    })
+    .done(function(datum){
+      var pts = decode(datum.trip.legs[0].shape, 6);
+      var newPts = _.map(pts, function(datum){
+        return _.chain(datum).reverse().value()
+      });
+      state.line = L.geoJSON(turf.lineString(newPts), {
+        "color": 'green'
+      }).addTo(map);
+    });
+  }
 });

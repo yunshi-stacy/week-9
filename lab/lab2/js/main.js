@@ -19,14 +19,14 @@ this logic.
 *Overview*
 
 1. We need to know where we are currently (in the form of a lat/lng pair) so
-    that we can plot this location and later use it as the origin for our route.
-    Note: this has been provided for you. The application should automatically
-    determine your location when you open it.
+that we can plot this location and later use it as the origin for our route.
+Note: this has been provided for you. The application should automatically
+determine your location when you open it.
 2. We'll need to find some way of converting the text from an input box into
-    (at least one) lat/lng pair
+(at least one) lat/lng pair
 3. With both an origin and a destination, we should be able to get directions
 4. Directions should come back in a form which can be processed into a line which
-    we can then plot on our map
+we can then plot on our map
 
 
 *Tasks*
@@ -58,10 +58,10 @@ it works BEFORE writing code you expect to use it. This can be done in the conso
 in a REST client like Postman mentioned above.
 
 Questions you should ask yourself:
-  - What are the inputs?
-  - How does the output look?
-  - What can I do with the output?
-  - Can I get a lat/lng from the output?
+- What are the inputs?
+- How does the output look?
+- What can I do with the output?
+- Can I get a lat/lng from the output?
 
 
 Task 2: Use Mapzen's 'Mobility' API to generate a route based on your origin and destination
@@ -120,20 +120,68 @@ var state = {
   position: {
     marker: null,
     updated: null
-  }
+  },
+  destination: {
+    coordinates: []
+  },
+  rqPara:{
+    json: {
+      locations: [{lat:null, lon:null}],
+      costing: null,
+    },
+    api_key: 'mapzen-Zg5RY9p'
+  },
+  myRoute: {}
 };
 
+var getRoutes = function(text){
+  //geocode location
+  $.getJSON('https://search.mapzen.com/v1/search?text=' + text + '&api_key=mapzen-Zg5RY9p')
+  .done(function(datum){
+    state.destination.coordinates = datum.features.length !== 0 ? datum.features[0].geometry.coordinates : [];
+    state.rqPara.json.locations[1] = (_.object(['lon', 'lat'], datum.features[0].geometry.coordinates));//!!!CAREFUL: return reversed lat and lon
+    L.circleMarker(_.chain(state.rqPara.json.locations[1]).reverse().value(), {color: "blue"}).addTo(map);
+    //request for route
+
+    diffRoute('auto');
+    diffRoute('pedestrian');
+    map.fitBounds(_.values(state.myRoute)[0].getBounds().extend(_.values(state.myRoute)[1].getBounds()));//union of two layers
+
+  })
+};
+
+var diffRoute = function(costing){
+  state.rqPara.json.costing = costing;
+  $.ajax({
+    type: 'GET',
+    url: 'https://matrix.mapzen.com/optimized_route',
+    data: {
+      json: JSON.stringify(state.rqPara.json),
+      api_key: state.rqPara.api_key,
+      id: state.rqPara.id},
+    })
+  .done(function(datum){
+    var pts = decode(datum.trip.legs[0].shape, 6);
+    var newPts = _.map(pts, function(datum){
+      return _.chain(datum).reverse().value()
+    });
+    state.myRoute[costing] = L.geoJSON(turf.lineString(newPts), {
+      "color": costing === 'auto' ? 'red' : 'green'
+    }).addTo(map);
+  });
+};
+
+
 /* We'll use underscore's `once` function to make sure this only happens
- *  one time even if weupdate the position later
- */
+*  one time even if weupdate the position later
+*/
 var goToOrigin = _.once(function(lat, lng) {
   map.flyTo([lat, lng], 14);
 });
 
-
 /* Given a lat and a long, we should create a marker, store it
- *  somewhere, and add it to the map
- */
+*  somewhere, and add it to the map
+*/
 var updatePosition = function(lat, lng, updated) {
   if (state.position.marker) { map.removeLayer(state.position.marker); }
   state.position.marker = L.circleMarker([lat, lng], {color: "blue"});
@@ -151,11 +199,12 @@ $(document).ready(function() {
   } else {
     alert("Unable to access geolocation API!");
   }
+  $('#dest').val()
 
 
   /* Every time a key is lifted while typing in the #dest input, disable
-   * the #calculate button if no text is in the input
-   */
+  * the #calculate button if no text is in the input
+  */
   $('#dest').keyup(function(e) {
     if ($('#dest').val().length === 0) {
       $('#calculate').attr('disabled', true);
@@ -167,9 +216,7 @@ $(document).ready(function() {
   // click handler for the "calculate" button (probably you want to do something with this)
   $("#calculate").click(function(e) {
     var dest = $('#dest').val();
-    console.log(dest);
+    state.rqPara.json.locations[0] = _.object(['lat','lon'], _.values(state.position.marker._latlng));
+    getRoutes(dest);
   });
-
 });
-
-
